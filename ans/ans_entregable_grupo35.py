@@ -239,11 +239,6 @@ plt.show()
 
 # %% [markdown]
 # ---
-# 
-# ## 3. Pregunta: ¿Se realizó alguna normalización o escalado de la base? ¿Por qué ?
-
-# %% [markdown]
-# ---
 # ## 4. Aplicación de clustering
 
 # %%
@@ -253,7 +248,17 @@ import matplotlib.cm as cm
 import numpy as np
 import matplotlib.pyplot as plt
 
-X = pd.concat([df_encoded[skills], df_encoded[mlb.classes_]], axis=1)
+from sklearn.preprocessing import StandardScaler
+
+# Escalar solo las habilidades (skills)
+scaler = StandardScaler()
+skills_scaled = scaler.fit_transform(df_encoded[skills])
+
+# Convertir de nuevo a DataFrame con los mismos índices
+skills_scaled_df = pd.DataFrame(skills_scaled, columns=skills, index=df_encoded.index)
+
+# Concatenar habilidades escaladas con posiciones one-hot
+X = pd.concat([skills_scaled_df, df_encoded[mlb.classes_]], axis=1)
 
 range_n_clusters = [2, 3, 4, 5, 6]
 sse = {}
@@ -322,17 +327,6 @@ plt.ylabel("Inercia")
 plt.title("Método del codo para KMeans")
 plt.show()
 
-# %% [markdown]
-# ### Conclusiones
-# ¿Qué hay en cada cluster?
-# 
-# ¿Son efectivamente equivalentes los jugadores de un cluster, es decir, podrían cumplir el mismo rol en un equipo?
-# 
-# Si se trata de clusters heterogéneos, ¿por qué razón pueden haber sido agrupadas las jugadoras del cluster?
-# 
-# ¿Qué motiva las diferencias en tamaño?
-# 
-
 # %%
 kmeans_final = KMeans(n_clusters=4, random_state=10, n_init=10)
 df_n["Cluster"] = kmeans_final.fit_predict(X)
@@ -347,5 +341,49 @@ plt.xlabel("Cluster")
 plt.legend(title="Position2", bbox_to_anchor=(1.05, 1), loc="upper left")
 plt.tight_layout()
 plt.show()
+
+# %% [markdown]
+# ---
+# 
+# ## Pregunta: ¿Se realizó alguna normalización o escalado de la base? ¿Por qué ?
+# 
+# Se utilizó StandardScaler para escalar todas las variables numéricas (skills) y luego concatenar las posiciones codificadas.
+# 
+# De esta forma:
+# 
+# - Todas las habilidades tendrán media 0 y desviación estándar 1.
+# - Las variables categóricas (posiciones one-hot, ya en 0/1) no quedan desbalanceadas.
+
+# %% [markdown]
+# ---
+# # Conclusiones
+# 
+# ### ¿Qué hay en cada cluster?
+# 
+# En cada cluster se agrupan jugadores según su especialización posicional (arqueros, defensores centrales, delanteros).
+# 
+# - Cluster 0: Este cluster agrupa perfiles polivalentes, jugadores de medio campo y laterales con roles mixtos.
+# 
+# - Cluster 1: Este cluster representa a los jugadores defensivos especialistas.
+# 
+# - Cluster 2: Los arqueros están perfectamente aislados.
+# 
+# - Cluster 3: Principalmente Wingers (Extremos) y Strikers (Delanteros). Este cluster representa a los jugadores ofensivos y de banda.
+# 
+# ### ¿Son efectivamente equivalentes los jugadores de un cluster, es decir, podrían cumplir el mismo rol en un equipo?
+# 
+# No son realmente equivalentes: el clustering se hace en un espacio multidimensional y la visualización en 2D (PAC y SHO) oculta diferencias importantes. Además, los perfiles de habilidades dentro de un mismo cluster son heterogéneos y el agrupamiento no considera roles tácticos.
+# 
+# ### Si se trata de clusters heterogéneos, ¿por qué razón pueden haber sido agrupadas las jugadoras del cluster?
+# 
+# - Pueden tener perfiles globales similares aunque difieran en habilidades específicas.
+# - La similitud surge en otras dimensiones (pase, defensa, regate, etc.).
+# - El algoritmo detecta jugadores de nivel global parecido.
+# 
+# ### ¿Qué motiva las diferencias en tamaño?
+# - Algunos arquetipos de jugador son más comunes que otros.
+# - Reflejan la distribución real de jugadores en el dataset.
+# - Hay combinaciones de habilidades más frecuentes (ej. extremos rápidos).
+# - Los clusters grandes suelen corresponder a jugadores promedio, y los pequeños a élites o especialistas raros.
 
 
